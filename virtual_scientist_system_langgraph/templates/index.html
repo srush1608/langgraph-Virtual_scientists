@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Paper Abstract Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #d3d3d3;  /* Grey background */
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 10px;
+            text-align: center; /* Center the form and response box */
+        }
+        input[type="text"] {
+            width: 80%; /* Make input box smaller than 100% */
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            width: 80%; /* Make button width the same as the input box */
+            padding: 10px;
+            font-size: 16px;
+            background-color: #007bff;  /* Blue button */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;  /* Darker blue on hover */
+        }
+        .abstract-box {
+            margin-top: 20px;
+            padding: 15px;
+            border: 2px solid #007bff;  /* Blue border */
+            background-color: #f9f9f9;
+            white-space: pre-wrap; /* To preserve newlines and formatting */
+            border-radius: 5px;
+            width: 80%; /* Same width as input and button */
+            margin: 20px auto 0; /* Center the box horizontally */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Research Paper Abstract Generator</h1>
+
+        <form method="POST">
+            <input type="text" name="topic" placeholder="Enter topic for abstract" required>
+            <button type="submit">Generate Abstract</button>
+        </form>
+
+        {% if final_abstract %}
+        <div class="abstract-box">
+            <h2>Final Abstract:</h2>
+            <p>{{ final_abstract }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+</body>
+</html>
