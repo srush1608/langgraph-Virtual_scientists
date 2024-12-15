@@ -7,7 +7,7 @@ load_dotenv()
 def connect_db():
     """Establishes a connection to PostgreSQL."""
     conn = psycopg2.connect(
-        dbname=os.getenv("DB_NAME"),  # Database name for your application
+        dbname=os.getenv("DB_NAME"),  
         user=os.getenv("DB_USER"), 
         password=os.getenv("DB_PASS"), 
         host=os.getenv("DB_HOST"), 
@@ -44,5 +44,4 @@ def store_query_response(topic, abstract):
     cursor.close()
     conn.close()
 
-# Ensure the table is created if it doesn't exist
 create_table()

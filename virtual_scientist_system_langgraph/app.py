@@ -1,26 +1,23 @@
 from flask import Flask, render_template, request
 from groq import Groq
-from prompts import S1_PROMPT, S2_PROMPT, S3_PROMPT, GROQ_FINAL_PROMPT
+from prompts import S1_PROMPT, S2_PROMPT, S3_PROMPT, GROQ_FINAL_PROMPT,S0_START_PROMPT
 from langgraph.graph import StateGraph, START, END
 from pydantic import BaseModel, Field
 from typing import TypedDict
 from database import store_query_response
 
-# Load environment variables (if any)
+
 from dotenv import load_dotenv
 load_dotenv()
 
-# Define the state class for managing the scientist's state
 class ScientistState(TypedDict):
     topic: str
-    s0_response: str
     s1_response: str
     s2_response: str
     s3_response: str
     final_abstract: str
     additional_notes: str
 
-# Define the Scientist class for querying the tools
 class Scientist:
     def __init__(self, name, agent, prompt):
         self.name = name
@@ -30,21 +27,19 @@ class Scientist:
 
     def query_tool(self, topic):
         print(f"{self.name} is querying the agent for the topic '{topic}'...")
-        # Use Groq's chat completion for querying (assuming it's synchronous)
         completion = self.agent.chat.completions.create(
             model="llama3-8b-8192",
             messages=[{"role": "system", "content": self.prompt}, {"role": "user", "content": topic}],
             temperature=1,
-            max_tokens=1500,
+            max_tokens=1500,  
             top_p=1,
-            stream=False,  # Disable streaming for a direct response
+            stream=False,  
             stop=None,
         )
-        self.response = completion.choices[0].message.content  # Access the response directly
+        self.response = completion.choices[0].message.content  
         print(f"Response from {self.name}: {self.response}")
         return self.response
 
-# Task functions for each part of the process
 def start(state: ScientistState):
     print("Starting the process...")
     return state
@@ -52,7 +47,7 @@ def start(state: ScientistState):
 def query_agent_s0(state: ScientistState):
     # S0 is now asking the topic question
     groq_agent = Groq()
-    scientist_s0 = Scientist("S0", groq_agent, "Ask the team for their insights on the topic: {state['topic']}.")
+    scientist_s0 = Scientist("S0", groq_agent, S0_START_PROMPT)
     s0_response = scientist_s0.query_tool(state['topic'])
     return {'additional_notes': s0_response}
 
@@ -75,37 +70,34 @@ def query_agent_s3(state: ScientistState):
     return {'s3_response': response}
 
 def abstract_generation(state: ScientistState):
-    # Format the final abstract using the responses gathered from the scientists
-    final_abstract = f"""
-    This is the final abstract generated from all thorough discussion with the team:
+    final_abstract_prompt = f"""
+    You professional summarizer. Your task is to generate a concise and well-structured abstract by summarizing the below responses:
 
-    S1 Findings:
-    {state['s1_response']}
-
-    S2 Findings:
-    {state['s2_response']}
-
-    S3 Findings:
-    {state['s3_response']}
-
-    Summary:
-    {state['s1_response']} {state['s2_response']} {state['s3_response']}
+    1. Key insights from S1: {state['s1_response']}
+    2. Additional details provided by S2: {state['s2_response']}
+    3. Further perspectives shared by S3: {state['s3_response']}
+    4. Abstract should be only between 300-400 words. 
+    5. STRICTLY provide only the abstract.
+    6. Strictly rely on the provided text, without external information.
+    7. Your response should directly start with the abstract without any external metadata.
     """
 
-    # Generate the final abstract with Groq
     client = Groq()
     completion = client.chat.completions.create(
-        model="llama3-8b-8192",  # Use the appropriate model
-        messages=[{"role": "system", "content": final_abstract}],
+        model="llama3-8b-8192",  
+        messages=[{"role": "system", "content": final_abstract_prompt}],
         temperature=0.7,
+        max_tokens=500,  
     )
-    
-    final_abstract_response = completion.choices[0].message.content
+
+    final_abstract_response = completion.choices[0].message.content.strip()
+
     store_query_response(state['topic'], final_abstract_response)
+
+    print(f"Generated Abstract: {final_abstract_response}")
 
     return {'final_abstract': final_abstract_response}
 
-# Define the graph and workflow
 def create_workflow():
     workflow = StateGraph(ScientistState)
 
@@ -117,20 +109,19 @@ def create_workflow():
     workflow.add_node("abstract_generation", abstract_generation)
 
     workflow.add_edge(START, "start")
-    workflow.add_edge("start", "query_s0")  # S0 starts the conversation
-    workflow.add_edge("query_s0", "query_s1")  # S0 talks to S1
-    workflow.add_edge("query_s0", "query_s2")  # S0 talks to S2
-    workflow.add_edge("query_s0", "query_s3")  # S0 talks to S3
-    workflow.add_edge("query_s1", "abstract_generation")  # After S1, generate abstract
-    workflow.add_edge("query_s2", "abstract_generation")  # After S2, generate abstract
-    workflow.add_edge("query_s3", "abstract_generation")  # After S3, generate abstract
+    workflow.add_edge("start", "query_s0")  
+    workflow.add_edge("query_s0", "query_s1") 
+    workflow.add_edge("query_s0", "query_s2")  
+    workflow.add_edge("query_s0", "query_s3")  
+    workflow.add_edge("query_s1", "abstract_generation")  
+    workflow.add_edge("query_s2", "abstract_generation")  
+    workflow.add_edge("query_s3", "abstract_generation") 
     workflow.add_edge("abstract_generation", END)
 
     return workflow
 
 app = Flask(__name__)
 
-# Define the endpoint for the form
 @app.route("/", methods=["GET", "POST"])
 def index():
     final_abstract = ""
@@ -139,10 +130,8 @@ def index():
         topic = request.form.get("topic")
         
         if topic:
-            # Initialize the workflow
             workflow = create_workflow()
 
-            # Initialize the state object
             state_obj = {
                 'topic': topic,
                 's1_response': '',
@@ -152,11 +141,9 @@ def index():
                 'additional_notes': ''
             }
 
-            # Execute the workflow
             app_flow = workflow.compile()
             result = app_flow.invoke(state_obj)
 
-            # Get the final abstract response
             final_abstract = result['final_abstract']
     
     return render_template("index.html", final_abstract=final_abstract)

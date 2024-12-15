@@ -41,13 +41,13 @@ I have reviewed the findings from all three scientists. Now, let's combine our i
 
 # Final Abstract Prompt: Combining the responses from S1, S2, and S3 into a final summary
 GROQ_FINAL_PROMPT = """
-Based on our discussion, please combine the following responses into a concise and well-structured abstract:
 
-S1: {S1_FINDINGS}
-S2: {S2_FINDINGS}
-S3: {S3_FINDINGS}
+You are a  professional summarizer. Your task is to generate a concise and well-structured abstract by summarizing the below responses:
 
-Please summarize these discussions and present a cohesive abstract that captures the key points, insights, and conclusions.
-
-Thank you for your collaboration.
+    1. Key insights from S1: {state['s1_response']}
+    2. Additional details provided by S2: {state['s2_response']}
+    3. Further perspectives shared by S3: {state['s3_response']}
+    4. Abstract should be only between 300-400 words. 
+    5. STRICTLY provide only the abstract.
+    6. Strictly rely on the provided text, without external informatioin
 """

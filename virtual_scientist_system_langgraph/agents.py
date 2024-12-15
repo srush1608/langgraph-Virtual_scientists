@@ -10,14 +10,11 @@ class DuckDuckGoAgent:
 
     async def query(self, topic):
         try:
-            # Perform the query using DuckDuckGo API
             response = requests.get(f"https://api.duckduckgo.com/?q={topic}&format=json")
-            response.raise_for_status()  # Raise error for unsuccessful responses
+            response.raise_for_status()  
             
-            # Print the full response for debugging
-            print("Full API Response:", response.json())  # Debugging line
+            print("Full API Response:", response.json())  
             
-            # Return the abstract (summary) of the topic from DuckDuckGo results
             return response.json().get('Abstract', 'No result found')
         except requests.exceptions.RequestException as e:
             return f"Error querying DuckDuckGo: {str(e)}"
